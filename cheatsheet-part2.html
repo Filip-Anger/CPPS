@@ -1,0 +1,391 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>cO(n)stant - additions</title><style>
+@page { size: A4; margin: 7mm 6mm 6mm 6mm; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: "DejaVu Sans","Liberation Sans",Arial,sans-serif;
+       font-size: 7.15pt; line-height: 1.25; color:#000; }
+.head { border-bottom: 1.6pt solid #000; padding-bottom: 2mm; margin-bottom: 2.5mm; }
+.head h1 { font-size: 13pt; margin:0; letter-spacing:.2pt; }
+.head .sub { font-size: 7pt; color:#333; margin-top: .8mm; }
+.toc { font-size: 6.6pt; color:#222; margin-top: 1.2mm; line-height:1.45; }
+.cols { column-count: 2; column-gap: 5mm; column-rule: .4pt solid #bbb; }
+section { margin-bottom: 2.1mm; }
+h2, h3 { break-after: avoid; }
+table, p.note, ul { break-inside: avoid; }
+h2 { font-size: 8.2pt; margin: 0 0 1.2mm 0; padding: .7mm 1.4mm;
+     background:#000; color:#fff; border-radius:1px; }
+h2 .n { display:inline-block; min-width: 4.2mm; font-weight:700; }
+h3 { font-size: 7.2pt; margin: 1.6mm 0 .8mm 0; padding-bottom:.4mm;
+     border-bottom: .4pt solid #999; }
+p { margin: .8mm 0; }
+p.note { background:#f0f0f0; border-left: 1.4pt solid #555;
+         padding: .8mm 1.4mm; margin: 1mm 0; font-size: 6.9pt; }
+pre { font-family:"DejaVu Sans Mono","Liberation Mono",monospace;
+      font-size: 5.75pt; line-height: 1.2; margin: 1mm 0; padding: 1mm 1.1mm;
+      background:#f7f7f7; border: .4pt solid #ccc; white-space: pre;
+      break-inside: avoid; overflow: hidden; }
+pre.py { background:#f2f4f7; }
+code { font-family:"DejaVu Sans Mono","Liberation Mono",monospace; font-size: 6.6pt;
+       background:#eee; padding:0 .5mm; }
+table { border-collapse: collapse; width:100%; margin: 1mm 0; font-size: 6.8pt; }
+th { background:#ddd; text-align:left; }
+th, td { border:.4pt solid #999; padding: .5mm 1mm; vertical-align: top; }
+table.tight td:first-child { white-space: nowrap; }
+ul { margin:.8mm 0; padding-left: 3.6mm; }
+li { margin:.45mm 0; }
+ul.check { list-style: none; padding-left: 0; }
+ul.check li::before { content:"\2610\00a0"; font-size:7.4pt; }
+sup { font-size: .72em; }
+</style></head><body>
+<div class="head">
+  <h1>Team cO(n)stant &mdash; cheat sheet, part 2</h1>
+  <div class="sub">Graphs &middot; DP &middot; number theory &middot; strings &middot; Python.
+  All C++ compiled under <code>g++ -std=c++17 -Wall -Wextra</code> and unit-tested (32 assertions).</div>
+  <div class="toc"><b>A</b>&nbsp;Choosing the algorithm &middot; <b>B</b>&nbsp;Union&ndash;Find &middot; <b>C</b>&nbsp;Traversal &amp; shortest paths &middot; <b>D</b>&nbsp;MST, SCC, matching, flow &middot; <b>E</b>&nbsp;Standard DP &middot; <b>F</b>&nbsp;Number theory &middot; <b>G</b>&nbsp;Geometry additions &middot; <b>H</b>&nbsp;String matching &middot; <b>I</b>&nbsp;Python &middot; <b>J</b>&nbsp;Before you submit</div>
+</div>
+<div class="cols"><section><h2><span class="n">A</span>Choosing the algorithm</h2><h3>Read the bound &rarr; derive the complexity &rarr; pick the algorithm</h3><table class="tight"><thead><tr><th>Bound</th><th>Target</th><th>Technique</th></tr></thead><tbody><tr><td>n &le; 10<sup>9</sup></td><td>O(1), O(log n), O(&radic;n)</td><td>closed form, binary search</td></tr><tr><td>n &le; 10<sup>6</sup></td><td>O(n), O(n log n)</td><td>greedy, sort, two pointers, D&amp;C</td></tr><tr><td>n &le; 10<sup>3</sup>, W &le; 10<sup>3</sup></td><td>O(nW)</td><td>DP over an n&times;W table</td></tr><tr><td>n &le; 10<sup>2</sup></td><td>O(n<sup>3</sup>)</td><td>Floyd&ndash;Warshall, Gauss, interval DP</td></tr><tr><td>n &le; 16</td><td>O(2<sup>n</sup>), O(n&middot;2<sup>n</sup>)</td><td>bitmask brute force / bitmask DP</td></tr><tr><td>n &le; 8</td><td>O(n!)</td><td>permutations</td></tr></tbody></table><p class="note">Budget <b>&asymp;10<sup>7</sup> steps per test case</b>. Over it &rarr; do not start implementing. Python: allow one complexity class more margin.</p><h3>Binary search on the answer</h3><p>If the problem asks for an optimum, ask instead: <i>can I achieve k?</i> If <code>check(k)</code> is monotone, binary search it. Turns optimisation into a decision problem.</p><pre class="cpp">ll lo = 0, hi = HI;              // hi must be achievable
+while (lo &lt; hi) {
+    ll mid = lo + (hi - lo) / 2; // NOT (lo+hi)/2: overflow
+    if (check(mid)) hi = mid; else lo = mid + 1;
+}
+// lo == smallest feasible value</pre><p class="note">Floating point: loop a fixed 100 iterations instead of comparing.</p><h3>Shortest path: which one?</h3><table class="tight"><thead><tr><th>Situation</th><th>Use</th></tr></thead><tbody><tr><td>unweighted / all weights equal</td><td>BFS &mdash; O(V+E)</td></tr><tr><td>non-negative weights</td><td>Dijkstra &mdash; O((V+E) log V)</td></tr><tr><td>negative weights possible</td><td>Bellman&ndash;Ford &mdash; O(VE)</td></tr><tr><td>all pairs, small n</td><td>Floyd&ndash;Warshall &mdash; O(V<sup>3</sup>)</td></tr></tbody></table></section><section><h2><span class="n">B</span>Union&ndash;Find (DSU)</h2><p>Near O(1) amortised. Kruskal, connectivity, cycle detection, grouping. <code>unite</code> returns false if already joined.</p><pre class="cpp">struct DSU {
+    vector&lt;int&gt; p, sz;
+    DSU(int n): p(n), sz(n,1) { iota(p.begin(), p.end(), 0); }
+    int find(int x){ while(p[x]!=x){ p[x]=p[p[x]]; x=p[x]; } return x; }
+    bool unite(int a,int b){
+        a=find(a); b=find(b);
+        if(a==b) return false;
+        if(sz[a]&lt;sz[b]) swap(a,b);
+        p[b]=a; sz[a]+=sz[b]; return true;
+    }
+};</pre></section><section><h2><span class="n">C</span>Traversal &amp; shortest paths</h2><pre class="cpp">vector&lt;int&gt; bfs(vector&lt;vector&lt;int&gt;&gt;&amp; adj, int s){
+    vector&lt;int&gt; dist(adj.size(), -1);
+    queue&lt;int&gt; q; dist[s]=0; q.push(s);
+    while(!q.empty()){
+        int v=q.front(); q.pop();
+        for(int w: adj[v]) if(dist[w]==-1){
+            dist[w]=dist[v]+1; q.push(w); }
+    }
+    return dist;
+}</pre><p class="note">Grid BFS: pad the grid with a wall ring so you never bounds-check. <code>int dx[]={1,-1,0,0}, dy[]={0,0,1,-1};</code></p><pre class="cpp">vector&lt;int&gt; dfs_iter(vector&lt;vector&lt;int&gt;&gt;&amp; adj, int s){
+    vector&lt;int&gt; seen(adj.size(),0), order;
+    vector&lt;int&gt; st{s};
+    while(!st.empty()){
+        int v=st.back(); st.pop_back();
+        if(seen[v]) continue;
+        seen[v]=1; order.push_back(v);
+        for(int w: adj[v]) if(!seen[w]) st.push_back(w);
+    }
+    return order;
+}</pre><p class="note">Iterative, so no stack overflow on deep graphs.</p><pre class="cpp">vector&lt;ll&gt; dijkstra(vector&lt;vector&lt;pair&lt;int,int&gt;&gt;&gt;&amp; adj, int s){
+    const ll INF = LLONG_MAX/4;
+    vector&lt;ll&gt; d(adj.size(), INF); d[s]=0;
+    priority_queue&lt;pair&lt;ll,int&gt;, vector&lt;pair&lt;ll,int&gt;&gt;, greater&lt;&gt;&gt; pq;
+    pq.push({0,s});
+    while(!pq.empty()){
+        auto [dv,v]=pq.top(); pq.pop();
+        if(dv&gt;d[v]) continue;                    // stale entry
+        for(auto [w,wt]: adj[v])
+            if(dv+wt&lt;d[w]){ d[w]=dv+wt; pq.push({d[w],w}); }
+    }
+    return d;
+}</pre><pre class="cpp">bool bellman_ford(int n, vector&lt;array&lt;ll,3&gt;&gt;&amp; edges,
+                  int s, vector&lt;ll&gt;&amp; d){
+    const ll INF = LLONG_MAX/4;
+    d.assign(n, INF); d[s]=0;
+    for(int i=0;i&lt;n-1;i++)
+        for(auto&amp; e: edges)
+            if(d[e[0]]&lt;INF &amp;&amp; d[e[0]]+e[2]&lt;d[e[1]])
+                d[e[1]]=d[e[0]]+e[2];
+    for(auto&amp; e: edges)              // one more pass =&gt; neg cycle
+        if(d[e[0]]&lt;INF &amp;&amp; d[e[0]]+e[2]&lt;d[e[1]]) return false;
+    return true;
+}</pre><pre class="cpp">void floyd(vector&lt;vector&lt;ll&gt;&gt;&amp; d){
+    int n=d.size();
+    for(int k=0;k&lt;n;k++) for(int i=0;i&lt;n;i++) for(int j=0;j&lt;n;j++)
+        if(d[i][k]+d[k][j] &lt; d[i][j]) d[i][j]=d[i][k]+d[k][j];
+}</pre><pre class="cpp">vector&lt;int&gt; toposort(vector&lt;vector&lt;int&gt;&gt;&amp; adj){
+    int n=adj.size(); vector&lt;int&gt; indeg(n,0), order;
+    for(int v=0;v&lt;n;v++) for(int w: adj[v]) indeg[w]++;
+    queue&lt;int&gt; q;
+    for(int v=0;v&lt;n;v++) if(!indeg[v]) q.push(v);
+    while(!q.empty()){
+        int v=q.front(); q.pop(); order.push_back(v);
+        for(int w: adj[v]) if(--indeg[w]==0) q.push(w);
+    }
+    return order;         // size &lt; n  =&gt;  graph has a cycle
+}</pre></section><section><h2><span class="n">D</span>MST, SCC, matching, flow</h2><pre class="cpp">ll kruskal(int n, vector&lt;array&lt;ll,3&gt;&gt; edges){
+    sort(edges.begin(), edges.end());             // weight first
+    DSU d(n); ll total=0;
+    for(auto&amp; e: edges) if(d.unite(e[1],e[2])) total+=e[0];
+    return total;
+}</pre><pre class="cpp">vector&lt;int&gt; scc(vector&lt;vector&lt;int&gt;&gt;&amp; adj){
+    int n=adj.size();
+    vector&lt;vector&lt;int&gt;&gt; rev(n);
+    for(int v=0;v&lt;n;v++) for(int w: adj[v]) rev[w].push_back(v);
+    vector&lt;int&gt; seen(n,0), order;
+    for(int s=0;s&lt;n;s++){
+        if(seen[s]) continue;
+        vector&lt;pair&lt;int,int&gt;&gt; st{{s,0}};
+        while(!st.empty()){
+            auto&amp; [v,i]=st.back();
+            if(!i){ if(seen[v]){ st.pop_back(); continue; }
+                    seen[v]=1; }
+            if(i &lt; (int)adj[v].size()){ int w=adj[v][i++];
+                if(!seen[w]) st.push_back({w,0}); }
+            else { order.push_back(v); st.pop_back(); }
+        }
+    }
+    vector&lt;int&gt; comp(n,-1); int c=0;
+    for(int i=n-1;i&gt;=0;i--){
+        int s=order[i];
+        if(comp[s]!=-1) continue;
+        vector&lt;int&gt; st{s}; comp[s]=c;
+        while(!st.empty()){
+            int v=st.back(); st.pop_back();
+            for(int w: rev[v]) if(comp[w]==-1){
+                comp[w]=c; st.push_back(w); }
+        }
+        c++;
+    }
+    return comp;
+}</pre><pre class="cpp">bool try_kuhn(int v, vector&lt;vector&lt;int&gt;&gt;&amp; adj,
+              vector&lt;int&gt;&amp; used, vector&lt;int&gt;&amp; mt){
+    for(int to: adj[v]){
+        if(used[to]) continue;
+        used[to]=1;
+        if(mt[to]==-1 || try_kuhn(mt[to],adj,used,mt)){
+            mt[to]=v; return true; }
+    }
+    return false;
+}
+int matching(vector&lt;vector&lt;int&gt;&gt;&amp; adj, int nRight){
+    vector&lt;int&gt; mt(nRight,-1); int res=0;
+    for(int v=0;v&lt;(int)adj.size();v++){
+        vector&lt;int&gt; used(nRight,0);
+        if(try_kuhn(v,adj,used,mt)) res++;
+    }
+    return res;
+}</pre><pre class="cpp">struct Dinic {
+    struct E{ int to; ll cap; };
+    vector&lt;E&gt; es; vector&lt;vector&lt;int&gt;&gt; g; vector&lt;int&gt; lvl, it;
+    Dinic(int n): g(n), lvl(n), it(n) {}
+    void add(int a,int b,ll c){
+        g[a].push_back(es.size()); es.push_back({b,c});
+        g[b].push_back(es.size()); es.push_back({a,0}); }
+    bool bfs(int s,int t){
+        fill(lvl.begin(),lvl.end(),-1);
+        queue&lt;int&gt; q; lvl[s]=0; q.push(s);
+        while(!q.empty()){ int v=q.front(); q.pop();
+            for(int id: g[v]) if(es[id].cap&gt;0 &amp;&amp; lvl[es[id].to]&lt;0){
+                lvl[es[id].to]=lvl[v]+1; q.push(es[id].to); } }
+        return lvl[t]&gt;=0;
+    }
+    ll dfs(int v,int t,ll f){
+        if(v==t) return f;
+        for(int&amp; i=it[v]; i&lt;(int)g[v].size(); i++){
+            int id=g[v][i], to=es[id].to;
+            if(es[id].cap&gt;0 &amp;&amp; lvl[to]==lvl[v]+1){
+                ll d=dfs(to,t,min(f,es[id].cap));
+                if(d&gt;0){ es[id].cap-=d; es[id^1].cap+=d; return d; }
+            }
+        }
+        return 0;
+    }
+    ll maxflow(int s,int t){
+        ll fl=0;
+        while(bfs(s,t)){ fill(it.begin(),it.end(),0);
+            while(ll f=dfs(s,t,LLONG_MAX/4)) fl+=f; }
+        return fl;
+    }
+};</pre><p class="note"><b>Max-flow = min-cut.</b> After <code>maxflow</code>, vertices reachable from s in the residual graph (<code>cap&gt;0</code>) are the source side of the cut.<br><b>Matching via flow:</b> source&rarr;left cap 1, left&rarr;right cap 1, right&rarr;sink cap 1.</p></section><section><h2><span class="n">E</span>Standard DP</h2><pre class="cpp">ll knapsack(vector&lt;int&gt;&amp; wt, vector&lt;ll&gt;&amp; val, int W){
+    vector&lt;ll&gt; dp(W+1,0);
+    for(size_t i=0;i&lt;wt.size();i++)
+        for(int w=W; w&gt;=wt[i]; w--)    // DESCENDING: item used once
+            dp[w]=max(dp[w], dp[w-wt[i]]+val[i]);
+    return dp[W];
+}</pre><p class="note"><b>The inner loop runs descending on purpose.</b> Ascending silently turns 0/1 knapsack into <i>unbounded</i> knapsack. It compiles, runs, and gives a plausible wrong answer.</p><pre class="cpp">int lis(vector&lt;int&gt;&amp; a){
+    vector&lt;int&gt; t;
+    for(int x: a){
+        // upper_bound instead =&gt; longest NON-DECREASING
+        auto it=lower_bound(t.begin(),t.end(),x);
+        if(it==t.end()) t.push_back(x); else *it=x;
+    }
+    return t.size();
+}</pre><pre class="cpp">ll coin_change(vector&lt;int&gt;&amp; c, int S){
+    const ll INF=LLONG_MAX/4;
+    vector&lt;ll&gt; dp(S+1,INF); dp[0]=0;
+    for(int s=1;s&lt;=S;s++) for(int x: c)
+        if(x&lt;=s &amp;&amp; dp[s-x]+1&lt;dp[s]) dp[s]=dp[s-x]+1;
+    return dp[S];
+}</pre><pre class="cpp">int lcs(string&amp; a, string&amp; b){
+    vector&lt;vector&lt;int&gt;&gt; dp(a.size()+1, vector&lt;int&gt;(b.size()+1,0));
+    for(size_t i=1;i&lt;=a.size();i++) for(size_t j=1;j&lt;=b.size();j++)
+        dp[i][j] = (a[i-1]==b[j-1]) ? dp[i-1][j-1]+1
+                                   : max(dp[i-1][j],dp[i][j-1]);
+    return dp[a.size()][b.size()];
+}</pre></section><section><h2><span class="n">F</span>Number theory</h2><pre class="cpp">vector&lt;int&gt; sieve(int n){
+    vector&lt;char&gt; is(n+1,1); is[0]=is[1]=0;
+    for(int i=2;(ll)i*i&lt;=n;i++) if(is[i])
+        for(int j=i*i;j&lt;=n;j+=i) is[j]=0;
+    vector&lt;int&gt; pr;
+    for(int i=2;i&lt;=n;i++) if(is[i]) pr.push_back(i);
+    return pr;
+}</pre><pre class="cpp">int gauss(vector&lt;vector&lt;double&gt;&gt; a, vector&lt;double&gt;&amp; ans){
+    int n=a.size(), m=a[0].size()-1;
+    vector&lt;int&gt; where(m,-1);
+    for(int col=0,row=0; col&lt;m &amp;&amp; row&lt;n; col++){
+        int sel=row;
+        for(int i=row;i&lt;n;i++)
+            if(fabs(a[i][col])&gt;fabs(a[sel][col])) sel=i;
+        if(fabs(a[sel][col])&lt;1e-9) continue;
+        swap(a[sel],a[row]);
+        where[col]=row;
+        for(int i=0;i&lt;n;i++) if(i!=row){
+            double c=a[i][col]/a[row][col];
+            for(int j=col;j&lt;=m;j++) a[i][j]-=a[row][j]*c;
+        }
+        row++;
+    }
+    ans.assign(m,0);
+    for(int i=0;i&lt;m;i++) if(where[i]!=-1)
+        ans[i]=a[where[i]][m]/a[where[i]][i];
+    for(int i=0;i&lt;n;i++){
+        double sum=0;
+        for(int j=0;j&lt;m;j++) sum+=ans[j]*a[i][j];
+        if(fabs(sum-a[i][m])&gt;1e-6) return 0;      // no solution
+    }
+    for(int i=0;i&lt;m;i++) if(where[i]==-1) return 2;  // infinitely many
+    return 1;
+}</pre><p class="note">Returns 0 = no solution, 1 = unique, 2 = infinitely many.</p></section><section><h2><span class="n">G</span>Geometry additions</h2><pre class="cpp">typedef pair&lt;ll,ll&gt; Pt;
+ll cross(Pt O, Pt A, Pt B){
+    return (A.first-O.first)*(B.second-O.second)
+         - (A.second-O.second)*(B.first-O.first);
+}
+vector&lt;Pt&gt; hull(vector&lt;Pt&gt; p){
+    sort(p.begin(),p.end()); p.erase(unique(p.begin(),p.end()),p.end());
+    int n=p.size(), k=0;
+    if(n&lt;3) return p;
+    vector&lt;Pt&gt; h(2*n);
+    for(int i=0;i&lt;n;i++){                         // lower
+        while(k&gt;=2 &amp;&amp; cross(h[k-2],h[k-1],p[i])&lt;=0) k--;
+        h[k++]=p[i];
+    }
+    for(int i=n-2,t=k+1;i&gt;=0;i--){                // upper
+        while(k&gt;=t &amp;&amp; cross(h[k-2],h[k-1],p[i])&lt;=0) k--;
+        h[k++]=p[i];
+    }
+    h.resize(k-1);
+    return h;
+}</pre><p class="note">Counter-clockwise. <code>&lt;=0</code> drops collinear points, <code>&lt;0</code> keeps them. All integer arithmetic &mdash; no floating point, so no precision bugs.</p><h3>Euler&rsquo;s formula</h3><p><b>V &minus; E + F = C + 1</b>, C = number of connected components. Use it whenever you need the number of faces of a planar subdivision.</p></section><section><h2><span class="n">H</span>String matching</h2><pre class="cpp">vector&lt;int&gt; prefix_function(string&amp; s){
+    int n=s.size(); vector&lt;int&gt; pi(n,0);
+    for(int i=1;i&lt;n;i++){
+        int j=pi[i-1];
+        while(j&gt;0 &amp;&amp; s[i]!=s[j]) j=pi[j-1];
+        if(s[i]==s[j]) j++;
+        pi[i]=j;
+    }
+    return pi;
+}
+// occurrences of pat in txt: run prefix_function on  pat + &#x27;\1&#x27; + txt
+vector&lt;int&gt; kmp_find(string pat, string txt){
+    string s = pat + &#x27;\1&#x27; + txt;
+    vector&lt;int&gt; pi = prefix_function(s), res;
+    for(size_t i=pat.size()+1;i&lt;s.size();i++)
+        if(pi[i]==(int)pat.size()) res.push_back(i - 2*pat.size());
+    return res;
+}</pre><pre class="cpp">struct Trie {
+    vector&lt;array&lt;int,26&gt;&gt; ch; vector&lt;int&gt; cnt;
+    Trie(){ newNode(); }
+    int newNode(){ ch.push_back({}); ch.back().fill(-1);
+                   cnt.push_back(0); return ch.size()-1; }
+    void insert(const string&amp; s){
+        int v=0;
+        for(char c: s){ int x=c-&#x27;a&#x27;;
+            if(ch[v][x]==-1) ch[v][x]=newNode();
+            v=ch[v][x]; }
+        cnt[v]++;
+    }
+    bool contains(const string&amp; s){
+        int v=0;
+        for(char c: s){
+            int x=c-&#x27;a&#x27;;
+            if(ch[v][x]==-1) return false;
+            v=ch[v][x];
+        }
+        return cnt[v]&gt;0;
+    }
+};</pre></section><section><h2><span class="n">I</span>Python</h2><p class="note">Allowed but not recommended. If someone submits Python, these are the differences from the C++ on the rest of this sheet.</p><h3>These are secretly O(n) &mdash; they create O(n<sup>2</sup>)</h3><table class="tight"><thead><tr><th>You write</th><th>Cost</th><th>Use instead</th></tr></thead><tbody><tr><td><code>lst.pop(0)</code>, <code>insert(0,x)</code></td><td>O(n)</td><td><code>collections.deque</code></td></tr><tr><td><code>x in lst</code></td><td>O(n)</td><td><code>x in set</code></td></tr><tr><td><code>s += chunk</code> in a loop</td><td>O(n<sup>2</sup>)</td><td><code>''.join(parts)</code></td></tr><tr><td><code>a[i:j]</code> in a loop</td><td>O(j&minus;i) copy</td><td>indices</td></tr><tr><td>copying state in recursion</td><td>O(n) per node</td><td>mutate + undo</td></tr></tbody></table><h3>Traps and free wins</h3><ul class=""><li><b>Recursion limit is 1000, no TCO.</b> DFS on 10<sup>5</sup> nodes is a Runtime Error. The template below survives depth 200 000.</li><li><b>Ints are arbitrary precision</b> &mdash; overflow cannot happen. No <code>long long</code> needed.</li><li><b>But <code>//</code> and <code>%</code> round toward &minus;&infin;</b> where C++ truncates. <code>-7//2 == -4</code> in Python, <code>-3</code> in C++. This bites exactly when you transcribe a C++ formula off this sheet.</li><li><b>Use <code>math.isqrt(n)</code>, never <code>int(n**0.5)</code></b> &mdash; the float version is wrong at large n, and the &ldquo;check until &radic;n&rdquo; primality test walks into it.</li><li><b>stdlib:</b> <code>heapq</code> (Dijkstra), <code>bisect</code>, <code>functools.lru_cache</code>, <code>itertools.permutations/combinations/product</code>, <code>collections.Counter/defaultdict/deque</code>, <code>math.gcd/lcm/isqrt/comb</code>, <code>pow(a,-1,m)</code>, <code>pow(a,b,m)</code>.</li></ul><h3>Template</h3><pre class="py">import sys
+import math
+from collections import deque, defaultdict, Counter
+from heapq import heappush, heappop, heapify
+from bisect import bisect_left, bisect_right, insort
+from itertools import permutations, combinations, product, accumulate
+from functools import lru_cache
+
+# ---------------------------------------------------------------- INPUT
+# All of stdin, read once, split in C. Never call input() below.
+_data = sys.stdin.buffer.read()
+_it = iter(_data.split())
+
+def ni():        return int(next(_it))                  # one int
+def nf():        return float(next(_it))                # one float
+def ns():        return next(_it).decode()       # one token
+def nints(k):    return [int(next(_it)) for _ in range(k)]
+def nall():      return list(map(int, _it))      # all remaining ints
+
+# LINE MODE - only when the input has strings containing spaces.
+# If you uncomment it, do NOT use ni()/ns()/nints() anywhere: the
+# two readers walk the same buffer, and mixing them loses input.
+# _lines = iter(_data.splitlines())
+# def rline():   return next(_lines).decode()
+
+# --------------------------------------------------------------- OUTPUT
+# Buffered: one syscall at the end instead of one per line.
+_out = []
+def emit(*args): _out.append(&#x27; &#x27;.join(map(str, args)))
+
+# ---------------------------------------------------------------- DEBUG
+# stderr is ignored by the judge: safe to leave in on submit.
+DEBUG = False
+def dbg(*args):
+    if DEBUG: print(*args, file=sys.stderr, flush=True)
+
+# ---------------------------------------------------------------- SOLVE
+def solve():
+    # All state lives HERE, as locals. The most common WA is stale
+    # data carried between test cases; locals make that impossible.
+
+    n = ni()
+    a = nints(n)
+
+    emit(sum(a))
+
+
+def main():
+    # Single test case? Delete the next two lines and just call solve().
+    t = ni()
+    for _ in range(t):
+        solve()
+
+
+# ----------------------------------------------------------------- BOOT
+def _run():
+    sys.setrecursionlimit(1 &lt;&lt; 20)   # default 1000: deep DFS = RTE
+    main()
+    if _out:
+        sys.stdout.write(&#x27;\n&#x27;.join(_out))
+        sys.stdout.write(&#x27;\n&#x27;)
+
+if __name__ == &#x27;__main__&#x27;:
+    # Python&#x27;s C stack, not the recursion counter, is the real limit.
+    # A thread with a big stack is what makes deep recursion survive.
+    import threading
+    try:
+        threading.stack_size(1 &lt;&lt; 27)       # 128 MB
+        _t = threading.Thread(target=_run)
+        _t.start()
+        _t.join()
+    except (ValueError, RuntimeError):   # platform refused it
+        _run()</pre></section><section><h2><span class="n">J</span>Before you submit</h2><ul class="check"><li><b>Loop bounds</b> &mdash; especially in DP.</li><li><b>Array bounds</b> &mdash; big enough? <code>n+1</code>?</li><li><b>Re-initialise between test cases.</b> Clear vectors, reset globals. Only shows on multi-case input.</li><li><b>Output format</b> &mdash; spelling, capitals, newlines. <code>IMPOSSIBLE</code> vs <code>Impossible</code>.</li><li><b>Overflow</b> &mdash; <code>long long</code>. Does an intermediate product exceed 2<sup>31</sup>?</li><li><b>Index offset</b> &mdash; <code>A[i]</code> or <code>A[i-1]</code>?</li><li><b>Read the complete input</b>, even once the answer is known.</li><li><b>Precision</b> &mdash; use <code>double</code>, <code>setprecision</code>; many multiplications &rarr; logs. Avoid <code>sqrt(-1)</code>, <code>log(0)</code>.</li><li><b>Rounding</b> &mdash; exactly as the statement prescribes.</li><li><b>Boundary cases</b> &mdash; n=1, empty, all-equal, maximum values.</li></ul><h3>Verdict triage</h3><table class="tight"><thead><tr><th>Verdict</th><th>Look at</th></tr></thead><tbody><tr><td>Runtime error</td><td>array index out of bounds, then <code>sqrt(-1)</code>, stack overflow</td></tr><tr><td>Time limit</td><td>algorithm too slow (you mis-estimated) or an infinite loop</td></tr><tr><td>Wrong answer</td><td>the checklist above; parse the input first, print to <b>stderr</b></td></tr></tbody></table><h3>Tactics</h3><p>One person writes the bug-free template first &middot; skim <b>all</b> problems immediately &middot; check the scoreboard to find the easy ones &middot; solve easy&rarr;hard &middot; think it through completely before touching the keyboard &middot; whoever is not coding writes hard test cases &middot; pencode when the machine is busy &middot; don&rsquo;t start with long simulation problems.</p></section></div>
+</body></html>
