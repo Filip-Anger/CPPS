@@ -1,0 +1,54 @@
+HOW TO RUN A SOLUTION WITH TEST INPUT
+=====================================
+
+The template reads ALL of stdin before your code runs. Never type input by
+hand -- put it in a file and feed the file in.
+
+1. Put the sample input from the problem statement into a file, e.g. in.txt
+
+2. Run it:
+
+       python3 solution.py < in.txt
+
+   The "<" tells the shell: use this file as standard input.
+
+
+VARIANTS WORTH KNOWING
+----------------------
+
+Save the output to a file:
+
+       python3 solution.py < in.txt > out.txt
+
+Compare your output against the expected output (silence = identical):
+
+       python3 solution.py < in.txt | diff - expected.txt
+
+Time it (the contest cares; Python is ~10x slower than the C++ budget):
+
+       time python3 solution.py < in.txt
+
+Feed input inline without a file, for a one-liner test:
+
+       printf '3\n1 2 3\n' | python3 solution.py
+
+
+IF YOU GET NO OUTPUT AT ALL
+---------------------------
+
+The template buffers everything and writes once at the end, AFTER main()
+returns. If an exception is thrown partway through, every emit() you made is
+thrown away and you see complete silence -- not a partial answer.
+
+So: no output means look at stderr for a traceback. The usual culprit is
+reading past the end of the input (StopIteration), or main() eating your first
+number as a test count when the problem doesn't have one.
+
+To read until end of input instead of a fixed count, use the default argument:
+
+       tok = next(_it, None)
+       if tok is None:
+           break
+
+To turn OFF the multi-test-case scaffold, delete the two lines in main() that
+read t and loop, and just call solve().
